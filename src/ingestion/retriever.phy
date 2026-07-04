@@ -1,0 +1,116 @@
+"""
+retriever.py — Member 5: Retrieval Engineer
+Fetches the top-K most relevant document chunks for any query
+using the FAISS vector store built by Member 4.
+"""
+
+import time
+import logging
+from typing import List, Tuple
+
+from langchain.schema import Document
+
+# Member 4's vector_db will expose this function
+# from src.ingestion.vector_db import load_vector_store
+
+logger = logging.getLogger(__name__)
+
+# ── Default TOP_K (overridden by config/settings.py from Member 2) ──
+try:
+    from config.settings import TOP_K
+except ImportError:
+    TOP_K = 5  # fallback default
+
+
+def retrieve(query: str, vector_db, top_k: int = TOP_K) -> List[Document]:
+    """
+    Retrieve the top-K most relevant chunks for a given query.
+
+    Args:
+        query:     The user's question or search string.
+        vector_db: A loaded FAISS vector store (from Member 4's vector_db.py).
+        top_k:     Number of chunks to return (default from config/settings.py).
+
+    Returns:
+        List of LangChain Document objects, each with .page_content and .metadata.
+    """
+    start_time = time.time()
+
+    if not query or not query.strip():
+        logger.warning("retrieve() called with empty query.")
+        return []
+
+    try:
+        docs = vector_db.similarity_search(query, k=top_k)
+        elapsed = time.time() - start_time
+
+        logger.info(
+            f"[Retriever] Query: '{query[:60]}...' | "
+            f"Retrieved: {len(docs)} chunks | "
+            f"Latency: {elapsed:.3f}s"
+        )
+        return docs
+
+    except Exception as e:
+        logger.error(f"[Retriever] similarity_search failed: {e}")
+        raise
+
+
+def retrieve_with_scores(
+    query: str, vector_db, top_k: int = TOP_K
+) -> List[Tuple[Document, float]]:
+    """
+    Same as retrieve() but also returns similarity scores.
+
+    Returns:
+        List of (Document, score) tuples. Lower score = more similar in FAISS L2.
+    """
+    start_time = time.time()
+
+    if not query or not query.strip():
+        logger.warning("retrieve_with_scores() called with empty query.")
+        return []
+
+    try:
+        results = vector_db.similarity_search_with_score(query, k=top_k)
+        elapsed = time.time() - start_time
+
+        logger.info(
+            f"[Retriever] Query: '{query[:60]}' | "
+            f"Retrieved: {len(results)} chunks with scores | "
+            f"Latency: {elapsed:.3f}s"
+        )
+        return results
+
+    except Exception as e:
+        logger.error(f"[Retriever] similarity_search_with_score failed: {e}")
+        raise
+
+
+def evaluate_retrieval(
+    query: str, vector_db, top_k: int = TOP_K
+) -> dict:
+    """
+    Runs retrieval and returns a metrics dict with latency and chunk count.
+    Used by evaluator.py to log performance.
+
+    Returns:
+        {
+            "query": str,
+            "top_k": int,
+            "num_retrieved": int,
+            "latency_seconds": float,
+            "chunks": List[Document]
+        }
+    """
+    start_time = time.time()
+    docs = retrieve(query, vector_db, top_k=top_k)
+    elapsed = time.time() - start_time
+
+    return {
+        "query": query,
+        "top_k": top_k,
+        "num_retrieved": len(docs),
+        "latency_seconds": round(elapsed, 4),
+        "chunks": docs,
+    }
