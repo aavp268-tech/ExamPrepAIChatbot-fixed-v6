@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import os
 import time
 import voyageai
@@ -6,6 +7,7 @@ from dotenv import load_dotenv
 from typing import List
 from functools import lru_cache
 from langchain_core.embeddings import Embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # Load all variables from .env
 load_dotenv()
@@ -18,14 +20,21 @@ GROQ_API_KEY           = os.getenv("GROQ_API_KEY")
 VOYAGE_EMBEDDING_MODEL = os.getenv("VOYAGE_EMBEDDING_MODEL")
 GROQ_LLM_MODEL         = os.getenv("GROQ_LLM_MODEL")
 
-if not VOYAGE_API_KEY:
-    raise ValueError("VOYAGE_API_KEY is missing — add it to your .env file")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is missing — add it to your .env file")
-if not VOYAGE_EMBEDDING_MODEL:
-    raise ValueError("VOYAGE_EMBEDDING_MODEL is missing — add it to your .env file")
 if not GROQ_LLM_MODEL:
     raise ValueError("GROQ_LLM_MODEL is missing — add it to your .env file")
+
+
+# FREE, LOCAL, NO-API-KEY EMBEDDINGS (recommended default)
+# Runs on CPU via sentence-transformers. No rate limits, no billing.
+@lru_cache(maxsize=1)
+def get_local_embeddings():
+    """Cached HuggingFace embeddings model — free, local, no API key needed."""
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-mpnet-base-v2",
+        encode_kwargs={"normalize_embeddings": True},
+    )
     
 # CACHED CLIENTS 
 
@@ -109,6 +118,7 @@ class VoyageEmbeddings(Embeddings):
         logger.info("[VoyageEmbeddings] Done embedding all chunks.")
         return all_embeddings
 
+    @abstractmethod
     def embed_query(self, text: str) -> List[float]:
         logger.info("[VoyageEmbeddings] Embedding query…")
         result = self._embed_with_retry([text], "query")

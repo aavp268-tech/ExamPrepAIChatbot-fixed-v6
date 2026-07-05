@@ -1,10 +1,12 @@
 import os
+import re
 import traceback
 import streamlit as st
+import streamlit.components.v1 as components
 
 from src.ingestion.pdf_loader import load_pdf
 from src.ingestion.txt_splitter import split_documents
-from src.ingestion.embeddings import VoyageEmbeddings
+from src.ingestion.embeddings import get_local_embeddings
 from src.ingestion.retriever import retrieve
 from src.vectorstore.ingestion.vector_db import create_vector_db, load_vector_db, vector_db_exists
 
@@ -33,6 +35,99 @@ if "file_name" not in st.session_state:
     st.session_state.file_name = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "flashcards" not in st.session_state:
+    st.session_state.flashcards = []
+
+
+# ── HELPER: parse raw "Front:/Back:" text into structured cards ──
+def parse_flashcards(raw_text: str):
+    cards = []
+    blocks = re.split(r'\n?\d+\.\s*', raw_text)
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+        front_match = re.search(r'Front:\s*(.+?)(?=Back:|$)', block, re.DOTALL | re.IGNORECASE)
+        back_match = re.search(r'Back:\s*(.+?)$', block, re.DOTALL | re.IGNORECASE)
+        if front_match and back_match:
+            cards.append({
+                "front": front_match.group(1).strip(),
+                "back": back_match.group(1).strip(),
+            })
+    return cards
+
+
+# ── HELPER: render flippable flashcards (beige/Playfair themed) ──
+def render_flip_cards(cards):
+    html = """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Nunito:wght@400;600;700&display=swap');
+    body { margin:0; background:transparent; font-family:'Nunito', sans-serif; }
+    .fc-grid {
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 22px;
+        padding: 8px 2px;
+    }
+    .fc-card { background:transparent; width:100%; height:220px; perspective:1200px; }
+    .fc-inner {
+        position:relative; width:100%; height:100%;
+        transition: transform 0.7s; transform-style: preserve-3d;
+        cursor:pointer;
+    }
+    .fc-card:hover .fc-inner { transform: rotateY(180deg); }
+    .fc-face {
+        position:absolute; width:100%; height:100%;
+        backface-visibility:hidden; border-radius:16px;
+        display:flex; align-items:center; justify-content:center;
+        text-align:center; padding:24px; box-sizing:border-box;
+        border: 1px solid #C8AD7F;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    .fc-front {
+        background: #D4B896;
+        color:#3B2F1E;
+        font-family:'Playfair Display', serif;
+        font-weight:600;
+        font-size:1.05rem;
+    }
+    .fc-back {
+        background: #EDE0C4;
+        color:#5C4827;
+        transform: rotateY(180deg);
+        font-size:0.95rem;
+        overflow:auto;
+    }
+    .fc-tag {
+        position:absolute; top:10px; left:14px;
+        font-size:0.7rem; font-weight:700; letter-spacing:0.08em;
+        color:#A0845C; text-transform:uppercase;
+    }
+    .fc-hint { text-align:center; color:#7A6040; font-family:'Nunito', sans-serif;
+               font-size:0.85rem; margin-bottom:14px; }
+    </style>
+    <div class="fc-hint">🖱️ Hover a card to flip it and reveal the answer</div>
+    <div class="fc-grid">
+    """
+    for i, card in enumerate(cards):
+        front = card.get("front", "").replace("<", "&lt;").replace(">", "&gt;")
+        back = card.get("back", "").replace("<", "&lt;").replace(">", "&gt;")
+        html += f"""
+        <div class="fc-card">
+            <div class="fc-inner">
+                <div class="fc-face fc-front">
+                    <div class="fc-tag">Card {i+1}</div>
+                    {front}
+                </div>
+                <div class="fc-face fc-back">{back}</div>
+            </div>
+        </div>
+        """
+    html += "</div>"
+
+    rows = (len(cards) + 2) // 3  # ~3 cards per row
+    height = 60 + rows * 250
+    components.html(html, height=height, scrolling=True)
 
 # ── GLOBAL BEIGE BACKGROUND + FONTS ──
 st.markdown("""
@@ -146,7 +241,7 @@ def process_document(uploaded_file):
         raise ValueError("No content could be extracted from this PDF.")
 
     chunks = split_documents(documents)
-    embeddings = VoyageEmbeddings()
+    embeddings = get_local_embeddings()
     vector_db = create_vector_db(chunks, embeddings)
 
     return vector_db, len(documents), len(chunks)
@@ -283,7 +378,17 @@ elif st.session_state.active_tab == "Flashcards":
         with st.spinner("Generating flashcards…"):
             context = get_context(topic)
             result = generate_flashcards(context, count=num_cards)
-        st.markdown(result)
+        parsed = parse_flashcards(result)
+        if parsed:
+            st.session_state.flashcards = parsed
+        else:
+            st.session_state.flashcards = []
+            st.warning("Couldn't parse the flashcards into front/back pairs — showing raw output instead.")
+            st.markdown(result)
+
+    if st.session_state.flashcards:
+        st.markdown(f"**{len(st.session_state.flashcards)} flashcards generated**")
+        render_flip_cards(st.session_state.flashcards)
 
 elif st.session_state.active_tab == "Notes":
     st.markdown("### 📝 Notes")
