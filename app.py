@@ -39,34 +39,6 @@ if "flashcards" not in st.session_state:
     st.session_state.flashcards = []
 
 
-# ── ICON HELPER (Material Symbols instead of emoji) ──
-def micon(name: str, size: int = 20, color: str = "#3B2F1E", fill: int = 0) -> str:
-    """Return an inline Material Symbols icon span for use inside markdown/HTML."""
-    return (
-        f'<span class="material-symbols-rounded" '
-        f'style="font-size:{size}px;color:{color};vertical-align:middle;'
-        f'font-variation-settings:\'FILL\' {fill},\'wght\' 400,\'GRAD\' 0,\'opsz\' 24;">'
-        f'{name}</span>'
-    )
-
-
-def section_header(icon_name: str, title: str, subtitle: str = None):
-    """Consistent, styled section header used in place of raw '### emoji Title' markdown."""
-    subtitle_html = f'<div class="sh-subtitle">{subtitle}</div>' if subtitle else ""
-    st.markdown(
-        f"""
-        <div class="section-header">
-            <div class="sh-title-row">
-                {micon(icon_name, size=26, color="#5C4827")}
-                <h3>{title}</h3>
-            </div>
-            {subtitle_html}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 # ── HELPER: parse raw "Front:/Back:" text into structured cards ──
 def parse_flashcards(raw_text: str):
     cards = []
@@ -85,17 +57,12 @@ def parse_flashcards(raw_text: str):
     return cards
 
 
-# ── HELPER: render flippable flashcards (beige/Fraunces themed) ──
+# ── HELPER: render flippable flashcards (beige/Playfair themed) ──
 def render_flip_cards(cards):
     html = """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-    body { margin:0; background:transparent; font-family:'Inter', sans-serif; }
-    .material-symbols-rounded {
-        font-family: 'Material Symbols Rounded';
-        font-weight: normal; font-style: normal;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Nunito:wght@400;600;700&display=swap');
+    body { margin:0; background:transparent; font-family:'Nunito', sans-serif; }
     .fc-grid {
         display:grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -105,7 +72,7 @@ def render_flip_cards(cards):
     .fc-card { background:transparent; width:100%; height:220px; perspective:1200px; }
     .fc-inner {
         position:relative; width:100%; height:100%;
-        transition: transform 0.7s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d;
+        transition: transform 0.7s; transform-style: preserve-3d;
         cursor:pointer;
     }
     .fc-card:hover .fc-inner { transform: rotateY(180deg); }
@@ -115,41 +82,31 @@ def render_flip_cards(cards):
         display:flex; align-items:center; justify-content:center;
         text-align:center; padding:24px; box-sizing:border-box;
         border: 1px solid #C8AD7F;
-        box-shadow: 0 3px 12px rgba(59,47,30,0.10);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
     }
     .fc-front {
         background: #D4B896;
         color:#3B2F1E;
-        font-family:'Fraunces', serif;
+        font-family:'Playfair Display', serif;
         font-weight:600;
-        font-size:1.08rem;
-        letter-spacing:0.01em;
+        font-size:1.05rem;
     }
     .fc-back {
         background: #EDE0C4;
         color:#5C4827;
         transform: rotateY(180deg);
-        font-family:'Inter', sans-serif;
         font-size:0.95rem;
-        line-height:1.5;
         overflow:auto;
     }
     .fc-tag {
         position:absolute; top:10px; left:14px;
-        font-family:'Inter', sans-serif;
-        font-size:0.68rem; font-weight:700; letter-spacing:0.1em;
+        font-size:0.7rem; font-weight:700; letter-spacing:0.08em;
         color:#A0845C; text-transform:uppercase;
     }
-    .fc-hint {
-        display:flex; align-items:center; justify-content:center; gap:6px;
-        text-align:center; color:#7A6040; font-family:'Inter', sans-serif;
-        font-size:0.85rem; margin-bottom:14px; font-weight:500;
-    }
+    .fc-hint { text-align:center; color:#7A6040; font-family:'Nunito', sans-serif;
+               font-size:0.85rem; margin-bottom:14px; }
     </style>
-    <div class="fc-hint">
-        <span class="material-symbols-rounded" style="font-size:17px;">sync</span>
-        Hover a card to flip it and reveal the answer
-    </div>
+    <div class="fc-hint">🖱️ Hover a card to flip it and reveal the answer</div>
     <div class="fc-grid">
     """
     for i, card in enumerate(cards):
@@ -175,128 +132,58 @@ def render_flip_cards(cards):
 # ── GLOBAL BEIGE BACKGROUND + FONTS ──
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
-    .material-symbols-rounded {
-        font-family: 'Material Symbols Rounded';
-        font-weight: normal;
-        font-style: normal;
-        line-height: 1;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Nunito:wght@400;600;700&display=swap');
 
     [data-testid="stAppViewContainer"] {
         background-color: #F2E8D9;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Nunito', sans-serif;
     }
     [data-testid="stHeader"] {
         background-color: #F2E8D9;
     }
     [data-testid="stSidebar"] {
         background-color: #E8D5B7;
+        font-family: 'Playfair Display', serif !important;
     }
 
-    /* Sidebar text uses Inter for readability; headings use Fraunces */
+    /* Apply Playfair only to text elements, NOT icons */
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label {
-        font-family: 'Inter', sans-serif !important;
-        color: #3B2F1E;
-    }
+    [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        font-family: 'Fraunces', serif !important;
+        font-family: 'Playfair Display', serif !important;
         color: #3B2F1E;
     }
 
-    /* Keep Material icon font untouched so glyphs render as icons, not text */
+    /* Keep icon fonts untouched so they render as icons, not text */
     [data-testid="stSidebar"] [data-testid="stIconMaterial"],
-    [data-testid="stIconMaterial"],
-    .material-icons {
+    [data-testid="stSidebar"] .material-icons,
+    [data-testid="stSidebar"] [class*="icon"] {
         font-family: 'Material Symbols Rounded', sans-serif !important;
     }
 
     h1, h2, h3 {
-        font-family: 'Fraunces', serif !important;
+        font-family: 'Playfair Display', serif !important;
         color: #3B2F1E !important;
-        letter-spacing: -0.01em;
     }
     p, div, label {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Nunito', sans-serif !important;
     }
-
-    /* ── Section headers (replace raw '### emoji Title' pattern) ── */
-    .section-header { margin: 4px 0 18px 0; }
-    .sh-title-row { display:flex; align-items:center; gap:10px; }
-    .sh-title-row h3 {
-        margin: 0 !important;
-        font-size: 1.55rem !important;
-        font-weight: 600 !important;
-    }
-    .sh-subtitle {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.85rem;
-        color: #7A6040;
-        margin: 4px 0 0 36px;
-    }
-    .section-header::after {
-        content: "";
-        display: block;
-        margin-top: 14px;
-        height: 1px;
-        background: linear-gradient(90deg, #C8AD7F, transparent);
-    }
-
-    /* ── Buttons ── */
     .stButton > button {
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-family: 'Playfair Display', serif !important;
+        font-size: 1.1rem !important;
         background-color: #D4B896 !important;
         color: #3B2F1E !important;
         border: 1px solid #C8AD7F !important;
         border-radius: 10px !important;
         width: 100% !important;
-        letter-spacing: 0.01em;
-        transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
     }
     .stButton > button:hover {
         background-color: #C8AD7F !important;
         color: #fff !important;
-        box-shadow: 0 3px 10px rgba(59,47,30,0.15);
     }
-    .stButton > button:active {
-        transform: translateY(1px);
-    }
-    /* Primary (active tab / primary actions) gets a stronger fill */
-    .stButton > button[kind="primary"] {
-        background-color: #3B2F1E !important;
-        color: #F2E8D9 !important;
-        border: 1px solid #3B2F1E !important;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background-color: #5C4827 !important;
-        color: #F2E8D9 !important;
-    }
-
-    /* ── Text inputs / number inputs ── */
-    .stTextInput input, .stNumberInput input {
-        font-family: 'Inter', sans-serif !important;
-        border: 1px solid #C8AD7F !important;
-        border-radius: 8px !important;
-        background-color: #FBF6EC !important;
-        color: #3B2F1E !important;
-    }
-
-    /* ── Alerts (info/success/warning/error) ── */
-    [data-testid="stAlert"] {
-        border-radius: 10px !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* ── Divider ── */
-    hr { border-color: #C8AD7F !important; opacity: 0.5; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -304,65 +191,36 @@ st.markdown("""
 st.markdown(f"""
     <div style="
         background-color: #D4B896;
-        padding: 48px 40px 40px 40px;
-        border-radius: 18px;
+        padding: 50px 40px;
+        border-radius: 16px;
         text-align: center;
         margin-bottom: 30px;
         border: 2px solid #C8AD7F;
-        box-shadow: 0 4px 18px rgba(59,47,30,0.10);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     ">
-        <div style="
-            display:inline-flex; align-items:center; gap:8px;
-            background: rgba(59,47,30,0.08);
-            border: 1px solid rgba(59,47,30,0.15);
-            border-radius: 30px;
-            padding: 5px 16px;
-            margin-bottom: 18px;
-        ">
-            {micon("auto_stories", size=15, color="#5C4827")}
-            <span style="
-                font-family:'Inter', sans-serif; font-size:0.72rem; font-weight:700;
-                letter-spacing:0.12em; text-transform:uppercase; color:#5C4827;
-            ">AI Study Assistant</span>
-        </div>
         <h1 style="
             color: #3B2F1E;
-            font-size: 2.9rem;
-            font-family: 'Fraunces', serif;
-            font-weight: 600;
-            margin: 0 0 10px 0;
+            font-size: 2.8rem;
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 10px;
         ">
-            {APP_NAME}
+            📚 {APP_NAME}
         </h1>
         <p style="
             color: #3B2F1E;
-            font-size: 1.08rem;
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 18px;
+            font-size: 1.1rem;
+            font-family: 'Nunito', sans-serif;
+            margin-bottom: 6px;
         ">
             Transform your PDFs into:
         </p>
-        <div style="
-            display:flex; justify-content:center; flex-wrap:wrap; gap:10px;
+        <p style="
+            color: #5C4827;
+            font-size: 1rem;
+            font-family: 'Nunito', sans-serif;
         ">
-            {"".join(
-                f'''
-                <div style="
-                    display:flex; align-items:center; gap:7px;
-                    background:#EDE0C4; border:1px solid #C8AD7F;
-                    border-radius:20px; padding:7px 16px;
-                    font-family:'Inter',sans-serif; font-size:0.88rem;
-                    font-weight:600; color:#5C4827;
-                ">{micon(icon, size=17, color="#5C4827")}<span>{label}</span></div>
-                '''
-                for icon, label in [
-                    ("summarize", "Smart Summaries"),
-                    ("style", "Flashcards"),
-                    ("edit_note", "Study Notes"),
-                    ("forum", "AI Q&amp;A"),
-                ]
-            )}
-        </div>
+            ✅ Smart Summaries &nbsp;|&nbsp; 🃏 Flashcards &nbsp;|&nbsp; 📝 Study Notes &nbsp;|&nbsp; 🤖 AI Q&A
+        </p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -410,31 +268,27 @@ with st.sidebar:
             text-align: center;
             padding: 24px 0 20px 0;
             border-bottom: 2px solid #C8AD7F;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
         ">
-            <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
-                {micon("auto_stories", size=30, color="#3B2F1E")}
-                <div style="
-                    font-family: 'Fraunces', serif;
-                    font-size: 1.55rem;
-                    font-weight: 700;
-                    color: #3B2F1E;
-                    line-height: 1.1;
-                ">{APP_NAME}</div>
-            </div>
             <div style="
-                font-family: 'Inter', sans-serif;
-                font-size: 0.82rem;
-                font-weight: 500;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                color: #7A6040;
-                margin-top: 8px;
+                font-family: 'Playfair Display', serif;
+                font-size: 2.4rem;
+                font-weight: 700;
+                color: #3B2F1E;
+                line-height: 1.1;
             ">
-                AI Exam Assistant
+                📚 {APP_NAME}
             </div>
             <div style="
-                margin-top: 14px;
+                font-family: 'Playfair Display', serif;
+                font-size: 1rem;
+                color: #7A6040;
+                margin-top: 4px;
+            ">
+                ~ AI Exam Assistant ~
+            </div>
+            <div style="
+                margin-top: 10px;
                 background: linear-gradient(90deg, #C8AD7F, #D4B896, #C8AD7F);
                 height: 3px;
                 border-radius: 10px;
@@ -442,13 +296,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown(
-        f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'
-        f'{micon("upload_file", size=19, color="#3B2F1E")}'
-        f'<span style="font-family:\'Fraunces\',serif;font-weight:700;font-size:1.05rem;color:#3B2F1E;">Upload your PDF</span>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 📂 Upload your PDF")
     uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="collapsed")
 
     if uploaded_file:
@@ -458,10 +306,10 @@ with st.sidebar:
             st.session_state.processed = False
 
         if st.session_state.processed:
-            st.success(f"{uploaded_file.name} processed and ready!", icon=":material/check_circle:")
+            st.success(f"✅ {uploaded_file.name} processed and ready!")
         else:
-            st.info(f"{uploaded_file.name} uploaded — click below to process it", icon=":material/info:")
-            if st.button("Process Document", use_container_width=True, icon=":material/settings:"):
+            st.info(f"👆 {uploaded_file.name} uploaded — click below to process it")
+            if st.button("⚙️ Process Document", use_container_width=True):
                 with st.spinner(
                     "Reading PDF, chunking and embedding… this can take a minute or two "
                     "on Voyage's free tier (rate-limited to 3 requests/min if you haven't "
@@ -475,62 +323,34 @@ with st.sidebar:
                         st.session_state.doc_count = doc_count
                         st.session_state.chunk_count = chunk_count
                         st.session_state.chat_history = []
-                        st.success("Document processed successfully!", icon=":material/check_circle:")
+                        st.success("Document processed successfully!")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Processing failed: {e}", icon=":material/error:")
+                        st.error(f"Processing failed: {e}")
                         st.code(traceback.format_exc())
     else:
-        st.info("Upload a PDF to get started", icon=":material/arrow_upward:")
+        st.info("👆 Upload a PDF to get started")
 
     if st.session_state.processed:
         st.markdown("---")
         st.caption(
-            f"{st.session_state.get('doc_count', 0)} pages · "
-            f"{st.session_state.get('chunk_count', 0)} chunks"
+            f"📄 {st.session_state.get('doc_count', 0)} pages · "
+            f"🧩 {st.session_state.get('chunk_count', 0)} chunks"
         )
 
     st.markdown("---")
-    st.markdown(
-        f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">'
-        f'{micon("explore", size=19, color="#3B2F1E")}'
-        f'<span style="font-family:\'Fraunces\',serif;font-weight:700;font-size:1.05rem;color:#3B2F1E;">Navigate</span>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 🗂️ Navigate")
 
-    active = st.session_state.active_tab
-
-    if st.button(
-        "Summary",
-        icon=":material/description:",
-        type="primary" if active == "Summary" else "secondary",
-        use_container_width=True,
-    ):
+    if st.button("📄 Summary"):
         st.session_state.active_tab = "Summary"
 
-    if st.button(
-        "Flashcards",
-        icon=":material/style:",
-        type="primary" if active == "Flashcards" else "secondary",
-        use_container_width=True,
-    ):
+    if st.button("🃏 Flashcards"):
         st.session_state.active_tab = "Flashcards"
 
-    if st.button(
-        "Notes",
-        icon=":material/edit_note:",
-        type="primary" if active == "Notes" else "secondary",
-        use_container_width=True,
-    ):
+    if st.button("📝 Notes"):
         st.session_state.active_tab = "Notes"
 
-    if st.button(
-        "Ask Questions",
-        icon=":material/forum:",
-        type="primary" if active == "QA" else "secondary",
-        use_container_width=True,
-    ):
+    if st.button("🤖 Ask Questions"):
         st.session_state.active_tab = "QA"
 
 
@@ -538,29 +358,23 @@ with st.sidebar:
 ready = st.session_state.processed
 
 if st.session_state.active_tab == "Summary":
-    section_header("description", "Summary")
+    st.markdown("### 📄 Summary")
     if not ready:
-        st.info(
-            "Upload and process a PDF in the sidebar, then click Generate Summary to see results here.",
-            icon=":material/info:",
-        )
+        st.info("Upload and process a PDF in the sidebar, then click Generate Summary to see results here.")
     topic = st.text_input("Focus topic (optional)", key="summary_topic", placeholder="Leave blank to summarize the whole document")
-    if st.button("Generate Summary", icon=":material/auto_awesome:", disabled=not ready):
+    if st.button("✨ Generate Summary", disabled=not ready):
         with st.spinner("Generating summary…"):
             context = get_context(topic)
             result = generate_summary(context)
         st.markdown(result)
 
 elif st.session_state.active_tab == "Flashcards":
-    section_header("style", "Flashcards")
+    st.markdown("### 🃏 Flashcards")
     if not ready:
-        st.info(
-            "Upload and process a PDF in the sidebar, then click Generate Flashcards to see results here.",
-            icon=":material/info:",
-        )
+        st.info("Upload and process a PDF in the sidebar, then click Generate Flashcards to see results here.")
     topic = st.text_input("Topic (optional)", key="flash_topic", placeholder="Leave blank to cover the whole document")
     num_cards = st.number_input("Number of flashcards", min_value=1, max_value=30, value=10)
-    if st.button("Generate Flashcards", icon=":material/auto_awesome:", disabled=not ready):
+    if st.button("✨ Generate Flashcards", disabled=not ready):
         with st.spinner("Generating flashcards…"):
             context = get_context(topic)
             result = generate_flashcards(context, count=num_cards)
@@ -569,10 +383,7 @@ elif st.session_state.active_tab == "Flashcards":
             st.session_state.flashcards = parsed
         else:
             st.session_state.flashcards = []
-            st.warning(
-                "Couldn't parse the flashcards into front/back pairs — showing raw output instead.",
-                icon=":material/warning:",
-            )
+            st.warning("Couldn't parse the flashcards into front/back pairs — showing raw output instead.")
             st.markdown(result)
 
     if st.session_state.flashcards:
@@ -580,26 +391,20 @@ elif st.session_state.active_tab == "Flashcards":
         render_flip_cards(st.session_state.flashcards)
 
 elif st.session_state.active_tab == "Notes":
-    section_header("edit_note", "Notes")
+    st.markdown("### 📝 Notes")
     if not ready:
-        st.info(
-            "Upload and process a PDF in the sidebar, then click Generate Notes to see results here.",
-            icon=":material/info:",
-        )
+        st.info("Upload and process a PDF in the sidebar, then click Generate Notes to see results here.")
     topic = st.text_input("Topic", key="notes_topic", placeholder="e.g. Thermodynamics, World War II…")
-    if st.button("Generate Notes", icon=":material/auto_awesome:", disabled=not ready):
+    if st.button("✨ Generate Notes", disabled=not ready):
         with st.spinner("Generating notes…"):
             context = get_context(topic)
             result = generate_notes(context, topic=topic or "the given content")
         st.markdown(result)
 
 elif st.session_state.active_tab == "QA":
-    section_header("forum", "Ask Questions")
+    st.markdown("### 🤖 Ask Questions")
     if not ready:
-        st.info(
-            "Upload and process a PDF in the sidebar, then type your question below.",
-            icon=":material/info:",
-        )
+        st.info("Upload and process a PDF in the sidebar, then type your question below.")
 
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
